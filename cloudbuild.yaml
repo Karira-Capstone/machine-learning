@@ -1,0 +1,39 @@
+steps:
+  - name: "gcr.io/cloud-builders/gsutil"
+    args: ["cp", "-r", "gs://karira-ml/models", "."]
+  - name: "gcr.io/cloud-builders/gsutil"
+    args: ["cp", "-r", "gs://karira-ml/Dockerfile", "."]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "asia-southeast2-docker.pkg.dev/$PROJECT_ID/docker-karira/tfserving:$COMMIT_SHA",
+        "-t",
+        "asia-southeast2-docker.pkg.dev/$PROJECT_ID/docker-karira/tfserving:latest",
+        ".",
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "asia-southeast2-docker.pkg.dev/$PROJECT_ID/docker-karira/tfserving"]
+  - name: "gcr.io/cloud-builders/gcloud"
+    args:
+      [
+        "run",
+        "deploy",
+        "karira-model",
+        "--image",
+        "asia-southeast2-docker.pkg.dev/$PROJECT_ID/docker-karira/tfserving:latest",
+        "--region",
+        "asia-southeast2",
+        "--platform",
+        "managed",
+        "--allow-unauthenticated",
+        "--cpu",
+        "2",
+        "--memory",
+        "4Gi",
+        "--port",
+        "8501",
+      ]
+options:
+  logging: CLOUD_LOGGING_ONLY
